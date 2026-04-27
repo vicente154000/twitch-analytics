@@ -1,45 +1,49 @@
 import { Link, useParams } from "react-router-dom";
 import { useAsync } from "../hooks/useAsync.js";
-import { getAnimeById, getAnimeCharacters, getAnimePictures } from "../services/jikan.js";
-import { animePoster, animeTitle, joinGenres } from "../utils/anime.js";
+import { obtenerAnimePorId, obtenerPersonajesAnime, obtenerImagenesAnime } from "../services/jikan.js";
+import { posterAnime, tituloAnime, unirGeneros } from "../utils/anime.js";
 
-export default function AnimeDetail() {
+export default function DetalleAnime() {
   const { id } = useParams();
 
-  const result = useAsync(
-    async ({ signal }) => {
-      const [detail, chars, pics] = await Promise.all([
-        getAnimeById({ id, signal }),
-        getAnimeCharacters({ id, signal }).catch(() => null),
-        getAnimePictures({ id, signal }).catch(() => null),
+  const resultado = useAsync(
+    async ({ signal: senal }) => {
+      // Hacemos las 3 llamadas en paralelo con Promise.all.
+      // Las de personajes e imágenes tienen catch() para que
+      // si fallan no tumben toda la página; el detalle principal
+      // es lo único realmente necesario.
+      const [detalle, personajes, imagenes] = await Promise.all([
+        obtenerAnimePorId({ id, senal }),
+        obtenerPersonajesAnime({ id, senal }).catch(() => null),
+        obtenerImagenesAnime({ id, senal }).catch(() => null),
       ]);
-      return { detail, chars, pics };
+      return { detail: detalle, chars: personajes, pics: imagenes };
     },
     [id],
   );
 
-  if (result.status === "loading") return <p className="muted">Cargando detalle…</p>;
-  if (result.status === "error") return <p className="error">No se pudo cargar el detalle.</p>;
+  if (resultado.status === "loading") return <p className="muted">Cargando detalle…</p>;
+  if (resultado.status === "error") return <p className="error">No se pudo cargar el detalle.</p>;
 
-  const anime = result.data?.detail?.data;
+  const anime = resultado.data?.detail?.data;
   if (!anime) return <p className="muted">No encontrado.</p>;
 
-  const title = animeTitle(anime);
-  const poster = animePoster(anime);
-  const genres = joinGenres(anime);
-  const score = anime.score ?? "—";
-  const year = anime.year ?? (anime.aired?.prop?.from?.year ?? "—");
-  const episodes = anime.episodes ?? "—";
-  const status = anime.status ?? "—";
-  const rating = anime.rating ?? "—";
+  const titulo = tituloAnime(anime);
+  const poster = posterAnime(anime);
+  const generos = unirGeneros(anime);
+  const puntuacion = anime.score ?? "—";
+  const anio = anime.year ?? (anime.aired?.prop?.from?.year ?? "—");
+  const episodios = anime.episodes ?? "—";
+  const estado = anime.status ?? "—";
+  const clasificacion = anime.rating ?? "—";
   const trailer = anime.trailer?.url;
 
-  const characters = result.data?.chars?.data ?? [];
-  const pictures = result.data?.pics?.data ?? [];
+  const personajes = resultado.data?.chars?.data ?? [];
+  const imagenes = resultado.data?.pics?.data ?? [];
 
   return (
     <div className="stack">
-      <section className="detailHero" aria-label={title}>
+      <section className="detailHero" aria-label={titulo}>
         <img className="detailHeroImg" src={poster} alt="" />
         <div className="detailHeroOverlay" aria-hidden="true" />
 
@@ -47,24 +51,24 @@ export default function AnimeDetail() {
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <span className="badgeRed">Verified wiki</span>
             <span className="muted" style={{ fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" }}>
-              {(anime.type ?? "—").toString()} • {year} • {rating}
+              {(anime.type ?? "—").toString()} • {anio} • {clasificacion}
             </span>
           </div>
 
           <h1 className="detailTitle">
-            <span style={{ color: "var(--text)" }}>{title.split(" ")[0]?.toUpperCase() ?? title.toUpperCase()}</span>{" "}
+            <span style={{ color: "var(--text)" }}>{titulo.split(" ")[0]?.toUpperCase() ?? titulo.toUpperCase()}</span>{" "}
             <span style={{ color: "var(--accent)" }}>
-              {title.split(" ").slice(1).join(" ").toUpperCase() || ""}
+              {titulo.split(" ").slice(1).join(" ").toUpperCase() || ""}
             </span>
           </h1>
 
           <div className="metaRow" style={{ fontSize: 14 }}>
             <span className="pill">
-              <span className="rating">★</span> {score}
+              <span className="rating">★</span> {puntuacion}
             </span>
-            <span className="pill">{episodes} eps</span>
-            <span className="pill">{status}</span>
-            {genres ? <span className="pill">{genres}</span> : null}
+            <span className="pill">{episodios} eps</span>
+            <span className="pill">{estado}</span>
+            {generos ? <span className="pill">{generos}</span> : null}
           </div>
 
           <div className="heroActions">
@@ -94,29 +98,29 @@ export default function AnimeDetail() {
         </p>
       </section>
 
-      {characters.length ? (
+      {personajes.length ? (
         <section aria-label="Main characters">
           <div className="sectionRow">
             <div className="detailSectionTitle">Main Characters</div>
             <span className="linkTiny">SEE ALL</span>
           </div>
           <div className="gridCards" style={{ marginTop: 16 }}>
-            {characters.slice(0, 6).map((c) => {
+            {personajes.slice(0, 6).map((personaje) => {
               const img =
-                c.character?.images?.webp?.image_url ||
-                c.character?.images?.jpg?.image_url ||
+                personaje.character?.images?.webp?.image_url ||
+                personaje.character?.images?.jpg?.image_url ||
                 "";
-              const name = c.character?.name ?? "Character";
-              const role = c.role ?? "";
+              const nombre = personaje.character?.name ?? "Character";
+              const rol = personaje.role ?? "";
               return (
-                <div key={c.character?.mal_id ?? name} className="cardGridItem">
-                  <img src={img} alt={name} loading="lazy" />
+                <div key={personaje.character?.mal_id ?? nombre} className="cardGridItem">
+                  <img src={img} alt={nombre} loading="lazy" />
                   <div className="cardGridBody">
                     <h3 className="cardGridTitle" style={{ marginBottom: 6 }}>
-                      {name}
+                      {nombre}
                     </h3>
                     <div className="muted" style={{ fontSize: 12 }}>
-                      {role}
+                      {rol}
                     </div>
                   </div>
                 </div>
@@ -126,23 +130,23 @@ export default function AnimeDetail() {
         </section>
       ) : null}
 
-      {pictures.length ? (
+      {imagenes.length ? (
         <section aria-label="Concept Art Gallery">
           <div className="detailSectionTitle">Concept Art Gallery</div>
           <div className="galleryGrid" style={{ marginTop: 16 }}>
-            {pictures.slice(0, 9).map((p, idx) => {
-              const src =
-                p.jpg?.large_image_url || p.webp?.large_image_url || p.jpg?.image_url || "";
+            {imagenes.slice(0, 9).map((imagen, indice) => {
+              const fuente =
+                imagen.jpg?.large_image_url || imagen.webp?.large_image_url || imagen.jpg?.image_url || "";
               return (
                 <a
-                  key={src || idx}
-                  href={src}
+                  key={fuente || indice}
+                  href={fuente}
                   target="_blank"
                   rel="noreferrer"
                   className="cardGridItem"
                   aria-label="Abrir imagen"
                 >
-                  <img src={src} alt="" loading="lazy" />
+                  <img src={fuente} alt="" loading="lazy" />
                 </a>
               );
             })}
@@ -152,4 +156,3 @@ export default function AnimeDetail() {
     </div>
   );
 }
-

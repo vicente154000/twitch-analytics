@@ -1,71 +1,70 @@
-const JIKAN_BASE_URL = "https://api.jikan.moe/v4";
+const URL_BASE_JIKAN = "https://api.jikan.moe/v4";
 
-function buildUrl(path, params) {
-  const url = new URL(`${JIKAN_BASE_URL}${path}`);
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v === undefined || v === null || v === "") continue;
-      url.searchParams.set(k, String(v));
+function construirUrl(ruta, parametros) {
+  const url = new URL(`${URL_BASE_JIKAN}${ruta}`);
+  if (parametros) {
+    for (const [clave, valor] of Object.entries(parametros)) {
+      if (valor === undefined || valor === null || valor === "") continue;
+      url.searchParams.set(clave, String(valor));
     }
   }
   return url;
 }
 
-async function jikanGet(path, { params, signal } = {}) {
-  const url = buildUrl(path, params);
-  const res = await fetch(url, {
+async function obtenerJikan(ruta, { params: parametros, signal: senal } = {}) {
+  const url = construirUrl(ruta, parametros);
+  const respuesta = await fetch(url, {
     method: "GET",
     headers: { Accept: "application/json" },
-    signal,
+    signal: senal,
   });
 
-  if (!res.ok) {
-    let details = "";
+  if (!respuesta.ok) {
+    let detalles = "";
     try {
-      details = await res.text();
+      detalles = await respuesta.text();
     } catch {
-      // ignore
+      // ignorar errores al leer el cuerpo de la respuesta
     }
-    throw new Error(`Jikan error ${res.status} ${res.statusText}${details ? ` - ${details}` : ""}`);
+    throw new Error(`Jikan error ${respuesta.status} ${respuesta.statusText}${detalles ? ` - ${detalles}` : ""}`);
   }
 
-  return res.json();
+  return respuesta.json();
 }
 
-export async function getTopAnime({ page = 1, limit = 12, signal } = {}) {
-  return jikanGet("/top/anime", { params: { page, limit }, signal });
+export async function obtenerTopAnime({ page: pagina = 1, limit: limite = 12, signal: senal } = {}) {
+  return obtenerJikan("/top/anime", { params: { page: pagina, limit: limite }, signal: senal });
 }
 
-export async function getSeasonNow({ page = 1, limit = 12, signal } = {}) {
-  return jikanGet("/seasons/now", { params: { page, limit }, signal });
+export async function obtenerTemporadaActual({ page: pagina = 1, limit: limite = 12, signal: senal } = {}) {
+  return obtenerJikan("/seasons/now", { params: { page: pagina, limit: limite }, signal: senal });
 }
 
-export async function searchAnime({
-  q,
-  page = 1,
-  limit = 12,
-  type,
-  status,
-  rating,
-  order_by = "score",
-  sort = "desc",
-  signal,
+export async function buscarAnime({
+  q: consulta,
+  page: pagina = 1,
+  limit: limite = 12,
+  type: tipo,
+  status: estado,
+  rating: clasificacion,
+  order_by: ordenarPor = "score",
+  sort: orden = "desc",
+  signal: senal,
 } = {}) {
-  return jikanGet("/anime", {
-    params: { q, page, limit, type, status, rating, order_by, sort },
-    signal,
+  return obtenerJikan("/anime", {
+    params: { q: consulta, page: pagina, limit: limite, type: tipo, status: estado, rating: clasificacion, order_by: ordenarPor, sort: orden },
+    signal: senal,
   });
 }
 
-export async function getAnimeById({ id, signal } = {}) {
-  return jikanGet(`/anime/${id}/full`, { signal });
+export async function obtenerAnimePorId({ id, signal: senal } = {}) {
+  return obtenerJikan(`/anime/${id}/full`, { signal: senal });
 }
 
-export async function getAnimeCharacters({ id, signal } = {}) {
-  return jikanGet(`/anime/${id}/characters`, { signal });
+export async function obtenerPersonajesAnime({ id, signal: senal } = {}) {
+  return obtenerJikan(`/anime/${id}/characters`, { signal: senal });
 }
 
-export async function getAnimePictures({ id, signal } = {}) {
-  return jikanGet(`/anime/${id}/pictures`, { signal });
+export async function obtenerImagenesAnime({ id, signal: senal } = {}) {
+  return obtenerJikan(`/anime/${id}/pictures`, { signal: senal });
 }
-

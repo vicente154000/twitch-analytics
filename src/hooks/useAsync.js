@@ -1,37 +1,43 @@
 import { useEffect, useRef, useState } from "react";
 
-export function useAsync(factory, deps = []) {
-  const [state, setState] = useState({
+export function useAsync(fabrica, deps = []) {
+  const [estado, setEstado] = useState({
     status: "idle",
     data: null,
     error: null,
   });
 
-  const requestIdRef = useRef(0);
-  const factoryRef = useRef(factory);
+  const idSolicitudRef = useRef(0);
+  const fabricaRef = useRef(fabrica);
 
-  factoryRef.current = factory;
+  fabricaRef.current = fabrica;
 
   useEffect(() => {
-    const requestId = ++requestIdRef.current;
-    const controller = new AbortController();
+    // Incrementamos el id de solicitud para que, si el componente
+    // se desmonta y se vuelve a montar rápido, las respuestas
+    // anteriores no se apliquen (evita race conditions).
+    const idSolicitud = ++idSolicitudRef.current;
+    const controlador = new AbortController();
 
-    setState({ status: "loading", data: null, error: null });
+    setEstado({ status: "loading", data: null, error: null });
 
     Promise.resolve()
-      .then(() => factoryRef.current({ signal: controller.signal }))
-      .then((data) => {
-        if (requestId !== requestIdRef.current) return;
-        setState({ status: "success", data, error: null });
+      .then(() => fabricaRef.current({ signal: controlador.signal }))
+      .then((datos) => {
+        // Si el id de la solicitud ya no coincide con el ref actual,
+        // significa que se inició otra solicitud más nueva y esta
+        // respuesta ya no es relevante. La descartamos.
+        if (idSolicitud !== idSolicitudRef.current) return;
+        setEstado({ status: "success", data: datos, error: null });
       })
       .catch((error) => {
-        if (controller.signal.aborted) return;
-        if (requestId !== requestIdRef.current) return;
-        setState({ status: "error", data: null, error });
+        if (controlador.signal.aborted) return;
+        if (idSolicitud !== idSolicitudRef.current) return;
+        setEstado({ status: "error", data: null, error });
       });
 
-    return () => controller.abort();
+    return () => controlador.abort();
   }, deps);
 
-  return state;
+  return estado;
 }

@@ -1,67 +1,73 @@
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import AnimeCard from "../components/AnimeCard.jsx";
-import Pagination from "../components/Pagination.jsx";
+import TarjetaAnime from "../components/AnimeCard.jsx";
+import Paginacion from "../components/Pagination.jsx";
 import { useAsync } from "../hooks/useAsync.js";
-import { searchAnime } from "../services/jikan.js";
+import { buscarAnime } from "../services/jikan.js";
 
-const LIMIT = 12;
+const LIMITE = 12;
 
-function getParam(sp, key, fallback = "") {
-  return sp.get(key) ?? fallback;
+function obtenerParam(parametrosUrl, clave, valorDefecto = "") {
+  return parametrosUrl.get(clave) ?? valorDefecto;
 }
 
-export default function AnimeList() {
-  const [searchParams, setSearchParams] = useSearchParams();
+export default function ListaAnime() {
+  const [parametrosBusqueda, establecerParametrosBusqueda] = useSearchParams();
 
-  const q = getParam(searchParams, "q", "");
-  const type = getParam(searchParams, "type", "");
-  const status = getParam(searchParams, "status", "");
-  const rating = getParam(searchParams, "rating", "");
-  const page = Number(getParam(searchParams, "page", "1")) || 1;
+  const consulta = obtenerParam(parametrosBusqueda, "q", "");
+  const tipo = obtenerParam(parametrosBusqueda, "type", "");
+  const estado = obtenerParam(parametrosBusqueda, "status", "");
+  const clasificacion = obtenerParam(parametrosBusqueda, "rating", "");
+  const pagina = Number(obtenerParam(parametrosBusqueda, "page", "1")) || 1;
 
-  const [draft, setDraft] = useState(() => ({
-    q,
-    type,
-    status,
-    rating,
+  // Usamos un "borrador" local para el formulario y solo
+  // actualizamos la URL al enviar. Así evitamos que cada
+  // pulsación de tecla genere entradas en el historial.
+  const [borrador, setBorrador] = useState(() => ({
+    consulta,
+    tipo,
+    estado,
+    clasificacion,
   }));
 
-  const deps = useMemo(() => [q, type, status, rating, page], [q, type, status, rating, page]);
+  const deps = useMemo(
+    () => [consulta, tipo, estado, clasificacion, pagina],
+    [consulta, tipo, estado, clasificacion, pagina],
+  );
 
-  const result = useAsync(
+  const resultado = useAsync(
     ({ signal }) =>
-      searchAnime({
-        q: q || undefined,
-        type: type || undefined,
-        status: status || undefined,
-        rating: rating || undefined,
-        page,
-        limit: LIMIT,
+      buscarAnime({
+        q: consulta || undefined,
+        type: tipo || undefined,
+        status: estado || undefined,
+        rating: clasificacion || undefined,
+        page: pagina,
+        limit: LIMITE,
         signal,
       }),
     deps,
   );
 
-  const pagination = result.data?.pagination;
-  const hasPrev = Boolean(pagination?.has_previous_page) && page > 1;
-  const hasNext = Boolean(pagination?.has_next_page);
+  const paginacion = resultado.data?.pagination;
+  const tieneAnterior = Boolean(paginacion?.has_previous_page) && pagina > 1;
+  const tieneSiguiente = Boolean(paginacion?.has_next_page);
 
-  function onSubmit(e) {
-    e.preventDefault();
-    const next = new URLSearchParams();
-    if (draft.q) next.set("q", draft.q);
-    if (draft.type) next.set("type", draft.type);
-    if (draft.status) next.set("status", draft.status);
-    if (draft.rating) next.set("rating", draft.rating);
-    next.set("page", "1");
-    setSearchParams(next);
+  function alEnviar(evento) {
+    evento.preventDefault();
+    const siguientes = new URLSearchParams();
+    if (borrador.consulta) siguientes.set("q", borrador.consulta);
+    if (borrador.tipo) siguientes.set("type", borrador.tipo);
+    if (borrador.estado) siguientes.set("status", borrador.estado);
+    if (borrador.clasificacion) siguientes.set("rating", borrador.clasificacion);
+    siguientes.set("page", "1");
+    establecerParametrosBusqueda(siguientes);
   }
 
-  function setPage(nextPage) {
-    const next = new URLSearchParams(searchParams);
-    next.set("page", String(nextPage));
-    setSearchParams(next);
+  function establecerPagina(siguientePagina) {
+    const siguientes = new URLSearchParams(parametrosBusqueda);
+    siguientes.set("page", String(siguientePagina));
+    establecerParametrosBusqueda(siguientes);
   }
 
   return (
@@ -72,7 +78,7 @@ export default function AnimeList() {
       </div>
 
       <section className="panel" aria-label="Buscador de anime">
-        <form onSubmit={onSubmit}>
+        <form onSubmit={alEnviar}>
           <div className="field" style={{ marginBottom: 12 }}>
             <label className="label" htmlFor="q">
               Search
@@ -80,9 +86,9 @@ export default function AnimeList() {
             <input
               id="q"
               className="input"
-              value={draft.q}
+              value={borrador.consulta}
               placeholder="Search titles, characters, or studios..."
-              onChange={(e) => setDraft((s) => ({ ...s, q: e.target.value }))}
+              onChange={(e) => setBorrador((s) => ({ ...s, consulta: e.target.value }))}
             />
           </div>
 
@@ -94,8 +100,8 @@ export default function AnimeList() {
               <select
                 id="type"
                 className="select"
-                value={draft.type}
-                onChange={(e) => setDraft((s) => ({ ...s, type: e.target.value }))}
+                value={borrador.tipo}
+                onChange={(e) => setBorrador((s) => ({ ...s, tipo: e.target.value }))}
               >
                 <option value="">Any</option>
                 <option value="tv">TV</option>
@@ -114,8 +120,8 @@ export default function AnimeList() {
               <select
                 id="status"
                 className="select"
-                value={draft.status}
-                onChange={(e) => setDraft((s) => ({ ...s, status: e.target.value }))}
+                value={borrador.estado}
+                onChange={(e) => setBorrador((s) => ({ ...s, estado: e.target.value }))}
               >
                 <option value="">Any</option>
                 <option value="airing">Airing</option>
@@ -133,8 +139,8 @@ export default function AnimeList() {
               <select
                 id="rating"
                 className="select"
-                value={draft.rating}
-                onChange={(e) => setDraft((s) => ({ ...s, rating: e.target.value }))}
+                value={borrador.clasificacion}
+                onChange={(e) => setBorrador((s) => ({ ...s, clasificacion: e.target.value }))}
               >
                 <option value="">Any</option>
                 <option value="g">G</option>
@@ -158,34 +164,34 @@ export default function AnimeList() {
         </form>
       </section>
 
-      {result.status === "loading" && <p className="muted">Cargando resultados…</p>}
-      {result.status === "error" && (
+      {resultado.status === "loading" && <p className="muted">Cargando resultados…</p>}
+      {resultado.status === "error" && (
         <p className="error">Ha ocurrido un error cargando resultados.</p>
       )}
 
-      {result.status === "success" && (
+      {resultado.status === "success" && (
         <>
-          {!result.data?.data?.length ? (
+          {!resultado.data?.data?.length ? (
             <p className="muted">No hay resultados con estos filtros.</p>
           ) : (
             <div className="gridCards" style={{ marginTop: 14 }}>
-              {result.data.data.map((a) => (
-                <AnimeCard key={a.mal_id} anime={a} />
+              {resultado.data.data.map((anime) => (
+                <TarjetaAnime key={anime.mal_id} anime={anime} />
               ))}
             </div>
           )}
 
           <div className="toolbar">
-            <Pagination
-              page={page}
-              hasPrev={hasPrev}
-              hasNext={hasNext}
-              onPrev={() => setPage(page - 1)}
-              onNext={() => setPage(page + 1)}
+            <Paginacion
+              pagina={pagina}
+              tieneAnterior={tieneAnterior}
+              tieneSiguiente={tieneSiguiente}
+              alAnterior={() => establecerPagina(pagina - 1)}
+              alSiguiente={() => establecerPagina(pagina + 1)}
             />
             <span className="muted">
-              {pagination?.items?.total
-                ? `Total aprox: ${pagination.items.total}`
+              {paginacion?.items?.total
+                ? `Total aprox: ${paginacion.items.total}`
                 : "Total no disponible"}
             </span>
           </div>
@@ -194,4 +200,3 @@ export default function AnimeList() {
     </div>
   );
 }
-

@@ -1,20 +1,19 @@
-export function animeTitle(anime) {
+export function tituloAnime(anime) {
   return anime?.title ?? anime?.title_english ?? anime?.title_japanese ?? "Anime";
 }
 
-export function animePoster(anime) {
-  const images = anime?.images;
+export function posterAnime(anime) {
+  const imagenes = anime?.images;
   return (
-    images?.webp?.large_image_url ||
-    images?.jpg?.large_image_url ||
-    images?.webp?.image_url ||
-    images?.jpg?.image_url ||
+    imagenes?.webp?.large_image_url ||
+    imagenes?.jpg?.large_image_url ||
+    imagenes?.webp?.image_url ||
+    imagenes?.jpg?.image_url ||
     ""
   );
 }
 
-export function joinGenres(anime) {
-  const genres = anime?.genres ?? [];
-  return genres.map((g) => g.name).filter(Boolean).join(", ");
+export function unirGeneros(anime) {
+  const generos = anime?.genres ?? [];
+  return generos.map((g) => g.name).filter(Boolean).join(", ");
 }
-

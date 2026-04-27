@@ -1,30 +1,30 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAsync } from "../hooks/useAsync.js";
-import { getSeasonNow, getTopAnime } from "../services/jikan.js";
+import { obtenerTopAnime, obtenerTemporadaActual } from "../services/jikan.js";
 
-function titleFor(anime) {
+function tituloPara(anime) {
   return anime?.title ?? anime?.title_english ?? anime?.title_japanese ?? "Anime";
 }
 
-function posterFor(anime) {
-  const images = anime?.images;
+function posterPara(anime) {
+  const imagenes = anime?.images;
   return (
-    images?.webp?.large_image_url ||
-    images?.jpg?.large_image_url ||
-    images?.webp?.image_url ||
-    images?.jpg?.image_url ||
+    imagenes?.webp?.large_image_url ||
+    imagenes?.jpg?.large_image_url ||
+    imagenes?.webp?.image_url ||
+    imagenes?.jpg?.image_url ||
     ""
   );
 }
 
-export default function Home() {
-  const top = useAsync(({ signal }) => getTopAnime({ limit: 6, signal }), ["top"]);
-  const now = useAsync(({ signal }) => getSeasonNow({ limit: 6, signal }), ["seasonNow"]);
-  const navigate = useNavigate();
+export default function Inicio() {
+  const top = useAsync(({ signal }) => obtenerTopAnime({ limit: 6, signal }), ["top"]);
+  const ahora = useAsync(({ signal }) => obtenerTemporadaActual({ limit: 6, signal }), ["seasonNow"]);
+  const navegar = useNavigate();
 
-  const hero = top.data?.data?.[0];
+  const heroe = top.data?.data?.[0];
   const mini = top.data?.data?.[1];
-  const carousel = now.data?.data ?? [];
+  const carrusel = ahora.data?.data ?? [];
 
   return (
     <div className="stack">
@@ -50,8 +50,8 @@ export default function Home() {
             placeholder="Search titles, characters, or studios..."
             onKeyDown={(e) => {
               if (e.key !== "Enter") return;
-              const q = e.currentTarget.value.trim();
-              navigate(q ? `/anime?q=${encodeURIComponent(q)}` : "/anime");
+              const consulta = e.currentTarget.value.trim();
+              navegar(consulta ? `/anime?q=${encodeURIComponent(consulta)}` : "/anime");
             }}
           />
         </div>
@@ -74,24 +74,24 @@ export default function Home() {
         {top.status === "loading" && <p className="muted">Cargando trending…</p>}
         {top.status === "error" && <p className="error">No se pudo cargar trending.</p>}
 
-        {top.status === "success" && hero && (
+        {top.status === "success" && heroe && (
           <div className="featuredGrid" style={{ marginTop: 32 }}>
             <article className="heroCard" aria-label="Featured entry">
               <div className="heroMedia" aria-hidden="true">
-                <img src={posterFor(hero)} alt="" loading="lazy" />
+                <img src={posterPara(heroe)} alt="" loading="lazy" />
               </div>
               <div className="heroGradient" aria-hidden="true" />
               <div className="heroInner">
                 <div className="kicker">FEATURED ENTRY</div>
-                <h2 className="heroHeading">{titleFor(hero).toUpperCase()}</h2>
+                <h2 className="heroHeading">{tituloPara(heroe).toUpperCase()}</h2>
                 <div className="heroActions">
-                  <Link to={`/anime/${hero.mal_id}`} className="btn btnPrimary">
+                  <Link to={`/anime/${heroe.mal_id}`} className="btn btnPrimary">
                     VIEW DETAILS
                   </Link>
                   <button
                     type="button"
                     className="btn"
-                    onClick={() => navigate(`/anime?q=${encodeURIComponent(titleFor(hero))}`)}
+                    onClick={() => navegar(`/anime?q=${encodeURIComponent(tituloPara(heroe))}`)}
                   >
                     CHARACTER LIST
                   </button>
@@ -102,9 +102,9 @@ export default function Home() {
             {mini ? (
               <Link to={`/anime/${mini.mal_id}`} className="miniCard" aria-label="Trending item">
                 <div className="heroMedia" aria-hidden="true">
-                  <img src={posterFor(mini)} alt="" loading="lazy" />
+                  <img src={posterPara(mini)} alt="" loading="lazy" />
                 </div>
-                <div className="miniTitle">{titleFor(mini).toUpperCase()}</div>
+                <div className="miniTitle">{tituloPara(mini).toUpperCase()}</div>
               </Link>
             ) : null}
           </div>
@@ -119,14 +119,14 @@ export default function Home() {
           </Link>
         </div>
 
-        {now.status === "loading" && <p className="muted">Cargando…</p>}
-        {now.status === "error" && <p className="error">No se pudo cargar featured.</p>}
+        {ahora.status === "loading" && <p className="muted">Cargando…</p>}
+        {ahora.status === "error" && <p className="error">No se pudo cargar featured.</p>}
 
-        {now.status === "success" && (
+        {ahora.status === "success" && (
           <div className="carousel" aria-label="Carrusel de títulos" style={{ marginTop: 16 }}>
-            {carousel.map((a) => (
-              <Link key={a.mal_id} to={`/anime/${a.mal_id}`} className="posterCard">
-                <img src={posterFor(a)} alt={titleFor(a)} loading="lazy" />
+            {carrusel.map((anime) => (
+              <Link key={anime.mal_id} to={`/anime/${anime.mal_id}`} className="posterCard">
+                <img src={posterPara(anime)} alt={tituloPara(anime)} loading="lazy" />
               </Link>
             ))}
           </div>
@@ -136,14 +136,14 @@ export default function Home() {
       <section aria-label="Discover by genre">
         <div className="sectionTitleText">DISCOVER BY GENRE</div>
         <div className="genreGrid" style={{ marginTop: 32 }}>
-          {["SHONEN", "HORROR", "MECHA", "ISEKAI", "SLICE OF LIFE", "SPORTS"].map((g) => (
+          {["SHONEN", "HORROR", "MECHA", "ISEKAI", "SLICE OF LIFE", "SPORTS"].map((genero) => (
             <button
-              key={g}
+              key={genero}
               type="button"
               className="genreTile"
-              onClick={() => navigate(`/anime?q=${encodeURIComponent(g)}`)}
+              onClick={() => navegar(`/anime?q=${encodeURIComponent(genero)}`)}
             >
-              {g}
+              {genero}
             </button>
           ))}
         </div>
@@ -151,4 +151,3 @@ export default function Home() {
     </div>
   );
 }
-
