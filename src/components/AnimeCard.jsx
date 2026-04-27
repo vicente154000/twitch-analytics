@@ -18,11 +18,15 @@ export default function AnimeCard({ anime }) {
   const type = anime.type ?? "—";
 
   return (
-    <Link to={`/anime/${anime.mal_id}`} className="card" aria-label={`Ver detalles de ${title}`}>
+    <Link
+      to={`/anime/${anime.mal_id}`}
+      className="cardGridItem"
+      aria-label={`Ver detalles de ${title}`}
+    >
       <img src={img} alt={`Poster de ${title}`} loading="lazy" />
-      <div>
-        <h3 className="cardTitle">{title}</h3>
-        <div className="cardMeta">
+      <div className="cardGridBody">
+        <h3 className="cardGridTitle">{title}</h3>
+        <div className="metaRow">
           <span className="pill">
             <span className="rating">★</span> {score}
           </span>

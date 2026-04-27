@@ -65,31 +65,31 @@ export default function AnimeList() {
   }
 
   return (
-    <div>
-      <div className="sectionHeader">
-        <h2>Explorar</h2>
-        <span>Búsqueda + filtros + paginación</span>
+    <div className="stack">
+      <div className="sectionRow">
+        <div className="sectionTitleText">FEATURED TITLES</div>
+        <span className="muted">Search + filters</span>
       </div>
 
       <section className="panel" aria-label="Buscador de anime">
         <form onSubmit={onSubmit}>
-          <div className="formRow">
-            <div className="field">
-              <label className="label" htmlFor="q">
-                Búsqueda
-              </label>
-              <input
-                id="q"
-                className="input"
-                value={draft.q}
-                placeholder="Ej. Fullmetal, Naruto, Frieren…"
-                onChange={(e) => setDraft((s) => ({ ...s, q: e.target.value }))}
-              />
-            </div>
+          <div className="field" style={{ marginBottom: 12 }}>
+            <label className="label" htmlFor="q">
+              Search
+            </label>
+            <input
+              id="q"
+              className="input"
+              value={draft.q}
+              placeholder="Search titles, characters, or studios..."
+              onChange={(e) => setDraft((s) => ({ ...s, q: e.target.value }))}
+            />
+          </div>
 
+          <div className="formRow" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
             <div className="field">
               <label className="label" htmlFor="type">
-                Tipo
+                Type
               </label>
               <select
                 id="type"
@@ -97,7 +97,7 @@ export default function AnimeList() {
                 value={draft.type}
                 onChange={(e) => setDraft((s) => ({ ...s, type: e.target.value }))}
               >
-                <option value="">Cualquiera</option>
+                <option value="">Any</option>
                 <option value="tv">TV</option>
                 <option value="movie">Movie</option>
                 <option value="ova">OVA</option>
@@ -109,7 +109,7 @@ export default function AnimeList() {
 
             <div className="field">
               <label className="label" htmlFor="status">
-                Estado
+                Status
               </label>
               <select
                 id="status"
@@ -117,16 +117,16 @@ export default function AnimeList() {
                 value={draft.status}
                 onChange={(e) => setDraft((s) => ({ ...s, status: e.target.value }))}
               >
-                <option value="">Cualquiera</option>
-                <option value="airing">En emisión</option>
-                <option value="complete">Finalizado</option>
-                <option value="upcoming">Próximamente</option>
+                <option value="">Any</option>
+                <option value="airing">Airing</option>
+                <option value="complete">Complete</option>
+                <option value="upcoming">Upcoming</option>
               </select>
             </div>
           </div>
 
           <div className="toolbar">
-            <div className="field" style={{ minWidth: 260 }}>
+            <div className="field" style={{ minWidth: 220 }}>
               <label className="label" htmlFor="rating">
                 Rating
               </label>
@@ -136,7 +136,7 @@ export default function AnimeList() {
                 value={draft.rating}
                 onChange={(e) => setDraft((s) => ({ ...s, rating: e.target.value }))}
               >
-                <option value="">Cualquiera</option>
+                <option value="">Any</option>
                 <option value="g">G</option>
                 <option value="pg">PG</option>
                 <option value="pg13">PG-13</option>
@@ -148,7 +148,7 @@ export default function AnimeList() {
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button className="btn btnPrimary" type="submit">
-                Buscar
+                Search
               </button>
               <Link className="btn" to="/anime">
                 Reset
@@ -168,7 +168,7 @@ export default function AnimeList() {
           {!result.data?.data?.length ? (
             <p className="muted">No hay resultados con estos filtros.</p>
           ) : (
-            <div className="grid" style={{ marginTop: 14 }}>
+            <div className="gridCards" style={{ marginTop: 14 }}>
               {result.data.data.map((a) => (
                 <AnimeCard key={a.mal_id} anime={a} />
               ))}

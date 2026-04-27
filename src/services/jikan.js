@@ -61,3 +61,11 @@ export async function getAnimeById({ id, signal } = {}) {
   return jikanGet(`/anime/${id}/full`, { signal });
 }
 
+export async function getAnimeCharacters({ id, signal } = {}) {
+  return jikanGet(`/anime/${id}/characters`, { signal });
+}
+
+export async function getAnimePictures({ id, signal } = {}) {
+  return jikanGet(`/anime/${id}/pictures`, { signal });
+}
+

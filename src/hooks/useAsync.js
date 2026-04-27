@@ -10,7 +10,6 @@ export function useAsync(factory, deps = []) {
   const requestIdRef = useRef(0);
   const factoryRef = useRef(factory);
 
-  // Mantener la última versión de la función sin disparar el efecto
   factoryRef.current = factory;
 
   useEffect(() => {
@@ -36,4 +35,3 @@ export function useAsync(factory, deps = []) {
 
   return state;
 }
-

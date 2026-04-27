@@ -1,17 +1,27 @@
 import { Link, useParams } from "react-router-dom";
 import { useAsync } from "../hooks/useAsync.js";
-import { getAnimeById } from "../services/jikan.js";
+import { getAnimeById, getAnimeCharacters, getAnimePictures } from "../services/jikan.js";
 import { animePoster, animeTitle, joinGenres } from "../utils/anime.js";
 
 export default function AnimeDetail() {
   const { id } = useParams();
 
-  const result = useAsync(({ signal }) => getAnimeById({ id, signal }), [id]);
+  const result = useAsync(
+    async ({ signal }) => {
+      const [detail, chars, pics] = await Promise.all([
+        getAnimeById({ id, signal }),
+        getAnimeCharacters({ id, signal }).catch(() => null),
+        getAnimePictures({ id, signal }).catch(() => null),
+      ]);
+      return { detail, chars, pics };
+    },
+    [id],
+  );
 
   if (result.status === "loading") return <p className="muted">Cargando detalle…</p>;
   if (result.status === "error") return <p className="error">No se pudo cargar el detalle.</p>;
 
-  const anime = result.data?.data;
+  const anime = result.data?.detail?.data;
   if (!anime) return <p className="muted">No encontrado.</p>;
 
   const title = animeTitle(anime);
@@ -24,48 +34,46 @@ export default function AnimeDetail() {
   const rating = anime.rating ?? "—";
   const trailer = anime.trailer?.url;
 
+  const characters = result.data?.chars?.data ?? [];
+  const pictures = result.data?.pics?.data ?? [];
+
   return (
-    <div className="detail">
-      <div className="sectionHeader">
-        <h2>Detalle</h2>
-        <span>
-          <Link to="/anime" className="muted">
-            ← Volver a explorar
-          </Link>
-        </span>
-      </div>
+    <div className="stack">
+      <section className="detailHero" aria-label={title}>
+        <img className="detailHeroImg" src={poster} alt="" />
+        <div className="detailHeroOverlay" aria-hidden="true" />
 
-      <section className="panel detailTop" aria-label={`Detalle de ${title}`}>
-        <img className="detailPoster" src={poster} alt={`Poster de ${title}`} />
+        <div className="detailHeroInner">
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <span className="badgeRed">Verified wiki</span>
+            <span className="muted" style={{ fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase" }}>
+              {(anime.type ?? "—").toString()} • {year} • {rating}
+            </span>
+          </div>
 
-        <div>
-          <h1 style={{ marginTop: 0, marginBottom: 10 }}>{title}</h1>
-          <div className="cardMeta" style={{ marginBottom: 10 }}>
+          <h1 className="detailTitle">
+            <span style={{ color: "var(--text)" }}>{title.split(" ")[0]?.toUpperCase() ?? title.toUpperCase()}</span>{" "}
+            <span style={{ color: "var(--accent)" }}>
+              {title.split(" ").slice(1).join(" ").toUpperCase() || ""}
+            </span>
+          </h1>
+
+          <div className="metaRow" style={{ fontSize: 14 }}>
             <span className="pill">
               <span className="rating">★</span> {score}
             </span>
-            <span className="pill">{anime.type ?? "—"}</span>
-            <span className="pill">{year}</span>
             <span className="pill">{episodes} eps</span>
-          </div>
-          <div className="cardMeta" style={{ marginBottom: 14 }}>
             <span className="pill">{status}</span>
-            <span className="pill">{rating}</span>
             {genres ? <span className="pill">{genres}</span> : null}
           </div>
 
-          {anime.synopsis ? (
-            <p style={{ lineHeight: 1.6, marginTop: 0 }} className="muted">
-              {anime.synopsis}
-            </p>
-          ) : (
-            <p className="muted">Sin sinopsis disponible.</p>
-          )}
-
           <div className="heroActions">
+            <Link to="/anime" className="btn">
+              ← Back
+            </Link>
             {anime.url ? (
               <a className="btn btnPrimary" href={anime.url} target="_blank" rel="noreferrer">
-                Ver en MyAnimeList
+                Read More
               </a>
             ) : null}
             {trailer ? (
@@ -76,6 +84,71 @@ export default function AnimeDetail() {
           </div>
         </div>
       </section>
+
+      <section className="panel" aria-label="Synopsis">
+        <div className="detailSectionTitle" style={{ marginBottom: 12 }}>
+          Synopsis
+        </div>
+        <p className="muted" style={{ margin: 0, lineHeight: 1.65 }}>
+          {anime.synopsis || "Sin sinopsis disponible."}
+        </p>
+      </section>
+
+      {characters.length ? (
+        <section aria-label="Main characters">
+          <div className="sectionRow">
+            <div className="detailSectionTitle">Main Characters</div>
+            <span className="linkTiny">SEE ALL</span>
+          </div>
+          <div className="gridCards" style={{ marginTop: 16 }}>
+            {characters.slice(0, 6).map((c) => {
+              const img =
+                c.character?.images?.webp?.image_url ||
+                c.character?.images?.jpg?.image_url ||
+                "";
+              const name = c.character?.name ?? "Character";
+              const role = c.role ?? "";
+              return (
+                <div key={c.character?.mal_id ?? name} className="cardGridItem">
+                  <img src={img} alt={name} loading="lazy" />
+                  <div className="cardGridBody">
+                    <h3 className="cardGridTitle" style={{ marginBottom: 6 }}>
+                      {name}
+                    </h3>
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      {role}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {pictures.length ? (
+        <section aria-label="Concept Art Gallery">
+          <div className="detailSectionTitle">Concept Art Gallery</div>
+          <div className="galleryGrid" style={{ marginTop: 16 }}>
+            {pictures.slice(0, 9).map((p, idx) => {
+              const src =
+                p.jpg?.large_image_url || p.webp?.large_image_url || p.jpg?.image_url || "";
+              return (
+                <a
+                  key={src || idx}
+                  href={src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="cardGridItem"
+                  aria-label="Abrir imagen"
+                >
+                  <img src={src} alt="" loading="lazy" />
+                </a>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
