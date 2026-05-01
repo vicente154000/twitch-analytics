@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export function useAsync(fabrica, deps = []) {
+export function useAsync(funcionAsync, deps = []) {
   const [estado, setEstado] = useState({
     status: "idle",
     data: null,
@@ -8,9 +8,12 @@ export function useAsync(fabrica, deps = []) {
   });
 
   const idSolicitudRef = useRef(0);
-  const fabricaRef = useRef(fabrica);
+  // La función es una que devuelve una promesa que 
+  // resuelve con los datos. Se pasa por referencia para
+  // evitar que se vuelva a ejecutar al cambiar el estado.
+  const funcionAsyncRef = useRef(funcionAsync);
 
-  fabricaRef.current = fabrica;
+  funcionAsyncRef.current = funcionAsync;
 
   useEffect(() => {
     // Incrementamos el id de solicitud para que, si el componente
@@ -22,7 +25,7 @@ export function useAsync(fabrica, deps = []) {
     setEstado({ status: "loading", data: null, error: null });
 
     Promise.resolve()
-      .then(() => fabricaRef.current({ signal: controlador.signal }))
+      .then(() => funcionAsyncRef.current({ signal: controlador.signal }))
       .then((datos) => {
         // Si el id de la solicitud ya no coincide con el ref actual,
         // significa que se inició otra solicitud más nueva y esta
